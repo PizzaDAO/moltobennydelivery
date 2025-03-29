@@ -53,6 +53,7 @@
     result.textContent = "";
     updateCounter();
     setupCities();
+    hideMap();
   }
 
   function updateCounter() {
@@ -131,6 +132,13 @@
   function showMap(route) {
     // Initialize the map
     const map = L.map('map').setView(cityCoords[route[0]], 2); // Set the initial map view to the first city and zoom level 2
+    // Check if the map element exists
+    const mapElement = document.getElementById('map');
+    
+    // If the map element exists, make it visible
+    if (mapElement) {
+      mapElement.style.visibility = 'visible'; // This removes all content inside the map container
+    }
   
     // Add OpenStreetMap tiles to the map
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -166,6 +174,16 @@
       // Add the marker with the appropriate icon
       L.circleMarker([lat, lon], markerOptions).addTo(map).bindPopup(route[index]);
     });
+  }
+
+  function hideMap() {
+    // Check if the map element exists
+    const mapElement = document.getElementById('map');
+    
+    // If the map element exists, clear it
+    if (mapElement) {
+      mapElement.style.visibility = 'hidden'; // This removes all content inside the map container
+    }
   }
   
   function makeSortable() {
