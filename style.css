@@ -29,6 +29,7 @@ li {
   user-select: none;
   max-width: 50%;
   min-width: 50%;
+  text-align: center;
 }
 li.correct {
   background-color: #c8f7c5;

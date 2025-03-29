@@ -95,11 +95,11 @@
     const userDistance = totalDistance(userRoute);
     attemptCount++;
     updateCounter();
-
+  
     const permutations = permute(selectedCities.slice(1));
     let bestRoute = null;
     let shortest = Infinity;
-
+  
     for (const perm of permutations) {
       const fullRoute = [startCity, ...perm];
       const dist = totalDistance(fullRoute);
@@ -108,7 +108,7 @@
         bestRoute = fullRoute;
       }
     }
-
+  
     items.forEach((item, index) => {
       item.classList.remove("correct", "incorrect");
       if (userRoute[index] === bestRoute[index]) {
@@ -117,10 +117,57 @@
         item.classList.add("incorrect");
       }
     });
-
+  
     result.textContent = `Your trip: ${userDistance.toFixed(1)} km. Best: ${shortest.toFixed(1)} km.`;
+  
+    // Only show the map if the user has the correct route
+    if (userRoute.join() === bestRoute.join()) {
+      showMap(bestRoute);  // Show the map with the full route if it's correct
+    } else {
+      hideMap();  // Hide the map if the route is incorrect
+    }
   }
+  
+  function showMap(route) {
+    // Initialize the map
+    const map = L.map('map').setView(cityCoords[route[0]], 2); // Set the initial map view to the first city and zoom level 2
+  
+    // Add OpenStreetMap tiles to the map
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+  
+    // Add markers for the cities in the route
+    let routeCoordinates = route.map(city => cityCoords[city]);
 
+    // Create a bounding box that will fit all the cities in the route
+    const bounds = L.latLngBounds(routeCoordinates);
+
+    // Fit the map view to the bounding box (i.e., the entire route)
+    map.fitBounds(bounds);
+    
+    // Add a polyline to show the route
+    L.polyline(routeCoordinates, { color: 'blue', weight: 4 }).addTo(map);
+  
+    // Add a marker for each city, with green for the first city and red for the last city
+    routeCoordinates.forEach(([lat, lon], index) => {
+      let markerOptions = {};  // Default options
+  
+      // If it's the first city, make the marker green
+      if (index === 0) {
+        markerOptions = { color: 'green' };
+      }
+      
+      // If it's the last city, make the marker red
+      if (index === routeCoordinates.length - 1) {
+        markerOptions = { color: 'red' };
+      }
+  
+      // Add the marker with the appropriate icon
+      L.circleMarker([lat, lon], markerOptions).addTo(map).bindPopup(route[index]);
+    });
+  }
+  
   function makeSortable() {
     let dragSrc = null;
 
