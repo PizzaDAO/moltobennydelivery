@@ -8,9 +8,12 @@ body {
 h2 {
   font-size: 1.5rem;
   text-align: center;
+  margin-left:8px;
 }
 .description {
   text-align: center;
+  margin-left: 10px;
+  margin-right: 10px;
 }
 ul {
   list-style: none;
@@ -55,10 +58,12 @@ button {
 #result {
   font-weight: bold;
   margin-top: 15px;
+  margin-left: 10px;
 }
 #counter {
   font-style: italic;
   margin-top: 5px;
+  margin-left: 10px;
 }
 footer {
   text-align: center;
