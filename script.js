@@ -45,6 +45,9 @@
     });
     makeSortable();
   }
+  function refreshGame() {
+    window.location.reload();
+  }
 
   function newGame() {
     selectedCities = pickRandomCities(8);
