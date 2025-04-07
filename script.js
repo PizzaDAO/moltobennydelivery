@@ -134,47 +134,90 @@
   
   function showMap(route) {
     // Initialize the map
-    const map = L.map('map').setView(cityCoords[route[0]], 2); // Set the initial map view to the first city and zoom level 2
-    // Check if the map element exists
+    const map = L.map('map').setView(cityCoords[route[0]], 2);
     const mapElement = document.getElementById('map');
     
-    // If the map element exists, make it visible
     if (mapElement) {
-      mapElement.style.visibility = 'visible'; // This removes all content inside the map container
+      mapElement.style.visibility = 'visible';
     }
   
-    // Add OpenStreetMap tiles to the map
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
   
-    // Add markers for the cities in the route
+    // Get coordinates for the route
     let routeCoordinates = route.map(city => cityCoords[city]);
+    
+    // Create a function to adjust longitude for crossing the 180° meridian
+    function adjustLongitude(coord1, coord2, hasCrossedMeridian, adjustment) {
+      const [lon1, lon2] = [coord1[1], coord2[1]];
+      
+      // If we haven't crossed the meridian yet, check if we need to
+      if (!hasCrossedMeridian) {
+        if (Math.abs(lon2 - lon1) > 180) {
+          // Determine which way to adjust based on the first crossing
+          adjustment = lon2 > lon1 ? -360 : 360;
+          return [coord2[0], lon2 + adjustment, true, adjustment];
+        }
+      } else {
+        // If we've already crossed the meridian, apply the same adjustment
+        return [coord2[0], lon2 + adjustment, true, adjustment];
+      }
+      
+      return [coord2[0], lon2, false, adjustment];
+    }
+
+    // Create adjusted coordinates for the polyline
+    let adjustedCoordinates = [];
+    let hasCrossedMeridian = false;
+    let adjustment = 0;
+    
+    // First pass: adjust all coordinates except the last one
+    for (let i = 0; i < routeCoordinates.length - 1; i++) {
+      if (i === 0) {
+        adjustedCoordinates.push(routeCoordinates[0]);
+      } else {
+        const [lat, lon, crossed, adj] = adjustLongitude(
+          adjustedCoordinates[i-1], 
+          routeCoordinates[i],
+          hasCrossedMeridian,
+          adjustment
+        );
+        adjustedCoordinates.push([lat, lon]);
+        hasCrossedMeridian = crossed;
+        adjustment = adj;
+      }
+    }
+
+    // Second pass: adjust the last coordinate if we've crossed the meridian
+    if (hasCrossedMeridian) {
+      const lastCoord = routeCoordinates[routeCoordinates.length - 1];
+      const [lat, lon] = adjustLongitude(
+        adjustedCoordinates[adjustedCoordinates.length - 1],
+        lastCoord,
+        true,
+        adjustment
+      );
+      adjustedCoordinates.push([lat, lon]);
+    } else {
+      adjustedCoordinates.push(routeCoordinates[routeCoordinates.length - 1]);
+    }
 
     // Create a bounding box that will fit all the cities in the route
     const bounds = L.latLngBounds(routeCoordinates);
-
-    // Fit the map view to the bounding box (i.e., the entire route)
     map.fitBounds(bounds);
     
-    // Add a polyline to show the route
-    L.polyline(routeCoordinates, { color: 'blue', weight: 4 }).addTo(map);
+    // Add the polyline with adjusted coordinates
+    L.polyline(adjustedCoordinates, { color: 'blue', weight: 4 }).addTo(map);
   
-    // Add a marker for each city, with green for the first city and red for the last city
-    routeCoordinates.forEach(([lat, lon], index) => {
-      let markerOptions = {};  // Default options
-  
-      // If it's the first city, make the marker green
+    // Add markers for each city using the adjusted coordinates
+    adjustedCoordinates.forEach(([lat, lon], index) => {
+      let markerOptions = {};
       if (index === 0) {
         markerOptions = { color: 'green' };
-      }
-      
-      // If it's the last city, make the marker red
-      if (index === routeCoordinates.length - 1) {
+      } else if (index === adjustedCoordinates.length - 1) {
         markerOptions = { color: 'red' };
       }
-  
-      // Add the marker with the appropriate icon
       L.circleMarker([lat, lon], markerOptions).addTo(map).bindPopup(route[index]);
     });
   }
