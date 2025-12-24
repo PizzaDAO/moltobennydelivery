@@ -23,7 +23,7 @@ ul {
   align-items: center;
 }
 li {
-  padding: 12px;
+  padding: 12px 12px;
   background: #eee;
   margin: 8px 0;
   border-radius: 8px;
@@ -33,6 +33,33 @@ li {
   max-width: 50%;
   min-width: 50%;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+li .handle {
+  font-weight: 700;
+  opacity: 0.55;
+  letter-spacing: -2px;
+  user-select: none;
+}
+
+li.draggable {
+  cursor: grab;
+}
+
+li.draggable:active {
+  cursor: grabbing;
+}
+
+li.dragging {
+  opacity: 0.65;
+  transform: scale(1.02);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
 }
 li.correct {
   background-color: #c8f7c5;
@@ -41,8 +68,42 @@ li.incorrect {
   background-color: #f8c8c8;
 }
 li.fixed {
-  background-color: #cce5ff;
-  cursor: default;
+  cursor: not-allowed;
+  opacity: 0.95;
+}
+
+/* Start city styling (blue like the original Casablanca tile) */
+li.start {
+  background: #cfe6ff;
+  border: 1px solid rgba(70, 130, 180, 0.25);
+}
+
+li.locked {
+  background-color: #c8f7c5;
+}
+
+li.fixed .handle {
+  opacity: 0.25;
+}
+
+/* Drop indicator (shows where the item will land) */
+li.drop-before::before,
+li.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 0;
+  border-top: 3px solid rgba(0,0,0,0.35);
+  border-radius: 3px;
+}
+
+li.drop-before::before {
+  top: -2px;
+}
+
+li.drop-after::after {
+  bottom: -2px;
 }
 button {
   margin: 10px 5px;
@@ -70,3 +131,65 @@ footer {
   margin-top: 20px;
   font-size: 0.9rem;
 }
+
+/* Map section is hidden until the puzzle is solved */
+#mapSection {
+  display: none;
+  margin-top: 10px;
+}
+
+#mapSection.visible {
+  display: block;
+}
+
+#mapButtons {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+#mapButtons button {
+  width: 100%;
+}
+
+/* Falling confetti emoji */
+.confetti-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 9999;
+}
+
+/* Always-visible map point labels */
+.leaflet-tooltip.city-label {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #111;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
+}
+
+.leaflet-tooltip.city-label:before {
+  border-top-color: rgba(255, 255, 255, 0.92);
+}
+
+.confetti-emoji {
+  position: absolute;
+  top: -40px;
+  font-size: 28px;
+  animation: confetti-fall 1.8s linear forwards;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.18));
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0.95; }
+}
+
+/* Remove tooltip tails */
+.leaflet-tooltip::before { display: none !important; }

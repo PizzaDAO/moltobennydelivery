@@ -24,22 +24,32 @@
   </header>
 
   <p class="description">
-    Drag the Global Pizza Party cities into the best order so Benny can deliver hot pizza to everyone around the world!
+    Help Benny plan the shortest Global Pizza Party delivery route!
   </p>
 
-  <ul id="cityList"></ul>
+  <!-- Cities / ordering UI -->
+  <section id="citiesSection">
+    <ul id="cityList"></ul>
 
-  <div id="buttons">
-    <button onclick="calculateTrip()">Calculate</button>
-    <button onclick="refreshGame()">New Game</button>
-  </div>
+    <div id="buttons">
+      <button onclick="calculateTrip()">Calculate</button>
+      <button onclick="refreshGame()">New Game</button>
+    </div>
 
-  <p id="result"></p>
-  <p id="counter">Attempts: 0</p>
+    <p id="result"></p>
+    <p id="counter">Attempts: 0</p>
+  </section>
+
+  <!-- Map UI (revealed on success, replaces the cities section) -->
+  <section id="mapSection" aria-hidden="true">
+    <div id="map" style="height: 400px; width: 100%;"></div>
+    <div id="mapButtons">
+      <button onclick="refreshGame()">New Game</button>
+    </div>
+  </section>
   <footer>
-    Inspired by PizzaDAO's <a href="https://globalpizzaparty.xyz" target="_blank">Global Pizza Party</a> 🍕
+    Inspired by PizzaDAO's <a href="https://globalpizza.party" target="_blank">Global Pizza Party</a> 🍕
   </footer>
-  <div id="map" style="height: 400px; width: 100%;"></div>
   <script src="script.js"></script>
 </body>
 </html>

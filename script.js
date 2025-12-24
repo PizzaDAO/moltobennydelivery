@@ -427,9 +427,28 @@
   let startCity = "";
   let attemptCount = 0;
 
+  // When true, the round is completed and we show the map instead of the city list
+  let solved = false;
+
+  // Pre-computed optimal route for the current round
+  let bestRoute = null;
+  let bestDistance = Infinity;
+
+  // Indices that are locked in place because they're correct
+  let lockedIndices = new Set();
+
+  // The user's current ordering (source of truth for the list)
+  let currentRoute = [];
+
   const list = document.getElementById("cityList");
   const result = document.getElementById("result");
   const counter = document.getElementById("counter");
+
+  const citiesSection = document.getElementById("citiesSection");
+  const mapSection = document.getElementById("mapSection");
+
+  // Leaflet map instance (so we can cleanly re-init)
+  let leafletMap = null;
 
   function pickRandomCities(num) {
     const shuffled = [...allCities].sort(() => 0.5 - Math.random());
@@ -438,13 +457,34 @@
 
   function setupCities() {
     list.innerHTML = "";
-    selectedCities.forEach((city, index) => {
+    currentRoute.forEach((city, index) => {
       const li = document.createElement("li");
-      li.textContent = city;
+      li.dataset.index = String(index);
       li.dataset.city = city;
-      if (index === 0) {
-        li.classList.add("fixed");
+
+      const isStart = index === 0;
+      const isLocked = lockedIndices.has(index);
+      const isFixed = isStart || isLocked;
+
+      // Content (adds handle only when the item is movable)
+      if (!isFixed) {
+        const handle = document.createElement("span");
+        handle.className = "handle";
+        handle.textContent = "⋮⋮";
+        li.appendChild(handle);
       }
+
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = city;
+      li.appendChild(label);
+
+      // Start city is always fixed + styled blue
+      if (isStart) li.classList.add("fixed", "start");
+
+      // Lock any city that is currently correct (fixed but no lock emoji)
+      if (isLocked && !isStart) li.classList.add("fixed", "locked");
+
       list.appendChild(li);
     });
     makeSortable();
@@ -457,10 +497,65 @@
     selectedCities = pickRandomCities(8);
     startCity = selectedCities[0];
     attemptCount = 0;
+    bestRoute = null;
+    bestDistance = Infinity;
+    lockedIndices = new Set([0]);
+    currentRoute = [...selectedCities];
+    solved = false;
+
+    // Pre-compute the optimal route once per round
+    const permutations = permute(selectedCities.slice(1));
+    for (const perm of permutations) {
+      const fullRoute = [startCity, ...perm];
+      const dist = totalDistance(fullRoute);
+      if (dist < bestDistance) {
+        bestDistance = dist;
+        bestRoute = fullRoute;
+      }
+    }
+
     result.textContent = "";
     updateCounter();
     setupCities();
     hideMap();
+
+    // Ensure the city UI is visible and map UI is hidden at the start of a round
+    if (citiesSection) citiesSection.style.display = "";
+    if (mapSection) {
+      mapSection.classList.remove("visible");
+      mapSection.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  const FALLING_EMOJI_DURATION_MS = 2600; // keep in sync with CSS animation / timing
+
+  function dropFallingEmojis_(count = 28) {
+    const layer = document.createElement("div");
+    layer.className = "confetti-layer";
+    document.body.appendChild(layer);
+
+    // Pizza rain 🍕
+    const emojis = ["🍕", "🍕", "🍕", "🍕"];
+
+    for (let i = 0; i < count; i++) {
+      const span = document.createElement("span");
+      span.className = "confetti-emoji";
+      span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+
+      const left = Math.random() * 100;
+      const delay = Math.random() * 0.25;
+      const drift = (Math.random() * 60 - 30);
+
+      span.style.left = `${left}vw`;
+      span.style.animationDuration = `${FALLING_EMOJI_DURATION_MS}ms`;
+      span.style.animationDelay = `${delay}s`;
+      span.style.transform = `translateX(${drift}px)`;
+      layer.appendChild(span);
+    }
+
+    window.setTimeout(() => {
+      layer.remove();
+    }, FALLING_EMOJI_DURATION_MS);
   }
 
   function updateCounter() {
@@ -498,47 +593,120 @@
   }
 
   function calculateTrip() {
-    const items = Array.from(document.querySelectorAll("#cityList li"));
-    const userRoute = items.map(item => item.dataset.city);
+    if (solved) return;
+
+    const userRoute = [...currentRoute];
     const userDistance = totalDistance(userRoute);
     attemptCount++;
     updateCounter();
-  
-    const permutations = permute(selectedCities.slice(1));
-    let bestRoute = null;
-    let shortest = Infinity;
-  
-    for (const perm of permutations) {
-      const fullRoute = [startCity, ...perm];
-      const dist = totalDistance(fullRoute);
-      if (dist < shortest) {
-        shortest = dist;
-        bestRoute = fullRoute;
-      }
-    }
-  
+
+    // Update correctness + lock in any positions that are correct
+    lockedIndices = new Set([0]);
+    userRoute.forEach((city, index) => {
+      if (bestRoute && city === bestRoute[index]) lockedIndices.add(index);
+    });
+
+    // Re-render list with correct/incorrect styling + locks
+    setupCities();
+
+    const items = Array.from(document.querySelectorAll("#cityList li"));
     items.forEach((item, index) => {
       item.classList.remove("correct", "incorrect");
-      if (userRoute[index] === bestRoute[index]) {
+      // Keep the start city blue and unscored
+      if (index === 0) return;
+
+      if (bestRoute && userRoute[index] === bestRoute[index]) {
         item.classList.add("correct");
       } else {
         item.classList.add("incorrect");
       }
     });
-  
-    result.textContent = `Your trip: ${userDistance.toFixed(1)} km. Best: ${shortest.toFixed(1)} km.`;
-  
-    // Only show the map if the user has the correct route
+
+    result.textContent = `Your trip: ${userDistance.toFixed(1)} km. Best: ${bestDistance.toFixed(1)} km.`;
+
+    // If the user solved it, celebrate then swap to the map view
     if (userRoute.join() === bestRoute.join()) {
-      showMap(bestRoute);  // Show the map with the full route if it's correct
+      solved = true;
+      dropFallingEmojis_();
+
+      // Wait twice as long as the falling emojis take to finish.
+      window.setTimeout(() => {
+        if (citiesSection) citiesSection.style.display = "none";
+        if (mapSection) {
+          mapSection.classList.add("visible");
+          mapSection.setAttribute("aria-hidden", "false");
+        }
+        showMap(bestRoute);
+      }, FALLING_EMOJI_DURATION_MS);
     } else {
-      hideMap();  // Hide the map if the route is incorrect
+      hideMap();
     }
+  }
+
+  // --- Drag & drop with locked slots ---
+  function moveInUnlockedSlots(fromIndex, toIndex) {
+    if (fromIndex === toIndex) return;
+    if (lockedIndices.has(fromIndex)) return;
+
+    // Build a list of indices that are movable
+    const unlocked = [];
+    for (let i = 0; i < currentRoute.length; i++) {
+      if (!lockedIndices.has(i)) unlocked.push(i);
+    }
+
+    // If user tries to drop on a locked slot, find nearest unlocked slot
+    const clampToUnlocked = (idx) => {
+      if (!lockedIndices.has(idx)) return idx;
+      // search outward
+      for (let d = 1; d < currentRoute.length; d++) {
+        const left = idx - d;
+        const right = idx + d;
+        if (left >= 0 && !lockedIndices.has(left)) return left;
+        if (right < currentRoute.length && !lockedIndices.has(right)) return right;
+      }
+      return fromIndex;
+    };
+
+    const safeTo = clampToUnlocked(toIndex);
+
+    // Extract the moving city
+    const moving = currentRoute[fromIndex];
+
+    // Remove it from its unlocked sequence
+    const unlockedCities = unlocked.map(i => currentRoute[i]);
+    const fromPos = unlocked.indexOf(fromIndex);
+    const toPos = unlocked.indexOf(safeTo);
+    if (fromPos === -1 || toPos === -1) return;
+
+    unlockedCities.splice(fromPos, 1);
+    unlockedCities.splice(toPos, 0, moving);
+
+    // Write back into currentRoute, preserving locked indices
+    const next = [...currentRoute];
+    let ptr = 0;
+    for (let i = 0; i < next.length; i++) {
+      if (lockedIndices.has(i)) continue;
+      next[i] = unlockedCities[ptr++];
+    }
+    currentRoute = next;
   }
   
   function showMap(route) {
+    // Ensure map section is visible (Leaflet needs a visible container)
+    if (mapSection) {
+      mapSection.classList.add("visible");
+      mapSection.setAttribute("aria-hidden", "false");
+    }
+
+    // Clean up any prior map instance
+    if (leafletMap) {
+      leafletMap.remove();
+      leafletMap = null;
+    }
+
     // Initialize the map
     const map = L.map('map').setView(cityCoords[route[0]], 2);
+    leafletMap = map;
     const mapElement = document.getElementById('map');
     
     if (mapElement) {
@@ -614,7 +782,9 @@
     // Add the polyline with adjusted coordinates
     L.polyline(adjustedCoordinates, { color: 'blue', weight: 4 }).addTo(map);
   
-    // Add markers for each city using the adjusted coordinates
+    // Add markers + always-visible labels for each city using the adjusted coordinates
+    const labelTooltips = [];
+
     adjustedCoordinates.forEach(([lat, lon], index) => {
       let markerOptions = {};
       if (index === 0) {
@@ -622,81 +792,255 @@
       } else if (index === adjustedCoordinates.length - 1) {
         markerOptions = { color: 'red' };
       }
-      L.circleMarker([lat, lon], markerOptions).addTo(map).bindPopup(route[index]);
+
+      const marker = L.circleMarker([lat, lon], markerOptions).addTo(map);
+      marker
+        .bindPopup(route[index])
+        .bindTooltip(route[index], {
+          permanent: true,
+          direction: 'top',
+          offset: [0, -10],
+          className: 'city-label'
+        })
+        .openTooltip();
+
+      // Keep a reference so we can reposition labels to avoid overlap.
+      labelTooltips.push(marker.getTooltip());
     });
+
+    // --- Prevent city labels from overlapping ---
+    // Leaflet doesn't avoid collisions for permanent tooltips by default.
+    // We apply small pixel offsets (via margins) so labels don't overlap.
+    const scheduleLabelLayout = () => {
+      window.requestAnimationFrame(() => {
+        resolveLeafletTooltipOverlaps_(map, labelTooltips);
+      });
+    };
+
+    // Run once after the DOM has the tooltip elements.
+    window.setTimeout(scheduleLabelLayout, 0);
+    // Re-run when the map moves/zooms.
+    map.on('zoomend moveend resize', scheduleLabelLayout);
+  }
+
+  function rectsOverlap_(a, b, pad = 2) {
+    return !(
+      a.right + pad <= b.left ||
+      a.left - pad >= b.right ||
+      a.bottom + pad <= b.top ||
+      a.top - pad >= b.bottom
+    );
+  }
+
+  function resolveLeafletTooltipOverlaps_(map, tooltips) {
+    const container = map?.getContainer?.();
+    if (!container) return;
+
+    // Grab live elements (Leaflet may recreate them on zoom).
+    const entries = tooltips
+      .map(tt => ({ tt, el: tt?.getElement?.() }))
+      .filter(x => x.el);
+
+    if (!entries.length) return;
+
+    // Reset offsets and ensure visible.
+    for (const { el } of entries) {
+      el.style.marginLeft = '0px';
+      el.style.marginTop = '0px';
+      el.style.opacity = '1';
+    }
+
+    // Sort top-to-bottom for stable placement.
+    entries.sort((a, b) => a.el.getBoundingClientRect().top - b.el.getBoundingClientRect().top);
+
+    const placedRects = [];
+    const candidates = [
+      [0, 0],
+      [0, 12],
+      [0, 24],
+      [0, 36],
+      [12, 12],
+      [-12, 12],
+      [12, 24],
+      [-12, 24],
+      [24, 12],
+      [-24, 12],
+      [24, 24],
+      [-24, 24],
+      [0, 48],
+      [0, 60]
+    ];
+
+    const containerRect = container.getBoundingClientRect();
+
+    for (const { el } of entries) {
+      let placed = false;
+
+      for (const [dx, dy] of candidates) {
+        el.style.marginLeft = `${dx}px`;
+        el.style.marginTop = `${dy}px`;
+
+        // Clamp slightly inside the map viewport so labels don't get cut off.
+        const r = el.getBoundingClientRect();
+        let clampDx = 0;
+        let clampDy = 0;
+
+        if (r.left < containerRect.left + 4) clampDx += (containerRect.left + 4 - r.left);
+        if (r.right > containerRect.right - 4) clampDx -= (r.right - (containerRect.right - 4));
+        if (r.top < containerRect.top + 4) clampDy += (containerRect.top + 4 - r.top);
+        if (r.bottom > containerRect.bottom - 4) clampDy -= (r.bottom - (containerRect.bottom - 4));
+
+        if (clampDx || clampDy) {
+          el.style.marginLeft = `${dx + clampDx}px`;
+          el.style.marginTop = `${dy + clampDy}px`;
+        }
+
+        const rect = el.getBoundingClientRect();
+        const collides = placedRects.some(pr => rectsOverlap_(rect, pr, 3));
+        if (!collides) {
+          placedRects.push(rect);
+          placed = true;
+          break;
+        }
+      }
+
+      // Last resort: if we somehow can't place it, hide it rather than overlap.
+      if (!placed) {
+        el.style.opacity = '0';
+      }
+    }
   }
 
   function hideMap() {
-    // Check if the map element exists
-    const mapElement = document.getElementById('map');
-    
-    // If the map element exists, clear it
-    if (mapElement) {
-      mapElement.style.visibility = 'hidden'; // This removes all content inside the map container
+    if (leafletMap) {
+      leafletMap.remove();
+      leafletMap = null;
+    }
+
+    if (mapSection) {
+      mapSection.classList.remove("visible");
+      mapSection.setAttribute("aria-hidden", "true");
     }
   }
   
   function makeSortable() {
-    let dragSrc = null;
+    let dragIndex = null;
+    let overIndex = null;
 
     const items = list.querySelectorAll("li");
-    items.forEach(item => {
-      if (item.classList.contains("fixed")) return;
+    items.forEach((item, idx) => {
+      const isFixed = item.classList.contains("fixed");
+      item.setAttribute("draggable", String(!isFixed));
+      item.classList.toggle("draggable", !isFixed);
+      item.style.opacity = "";
 
-      item.setAttribute("draggable", true);
-
-      item.ontouchstart = e => {
-        dragSrc = item;
-        item.style.opacity = "0.5";
-      };
-
-      item.ontouchend = () => {
-        dragSrc.style.opacity = "1";
-        dragSrc = null;
-      };
-
-      item.ontouchmove = e => {
-        e.preventDefault(); // prevent scrolling
-        const touch = e.touches[0];
-        const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (!target || target.tagName !== "LI" || target === dragSrc || target.classList.contains("fixed")) return;
-
-        const from = Array.from(list.children).indexOf(dragSrc);
-        const to = Array.from(list.children).indexOf(target);
-        if (from < to) {
-          list.insertBefore(dragSrc, target.nextSibling);
-        } else {
-          list.insertBefore(dragSrc, target);
-        }
-      };
-
-      // Desktop drag events
       item.addEventListener("dragstart", e => {
-        dragSrc = item;
+        if (isFixed) {
+          e.preventDefault();
+          return;
+        }
+        dragIndex = idx;
+        item.classList.add("dragging");
         e.dataTransfer.effectAllowed = "move";
-        item.style.opacity = "0.5";
       });
 
       item.addEventListener("dragend", () => {
-        item.style.opacity = "1";
-      });
-
-      item.addEventListener("dragover", e => e.preventDefault());
-
-      item.addEventListener("drop", e => {
-        e.preventDefault();
-        const target = e.target;
-        if (target.tagName !== "LI" || target.classList.contains("fixed") || dragSrc === target) return;
-
-        const from = Array.from(list.children).indexOf(dragSrc);
-        const to = Array.from(list.children).indexOf(target);
-        if (from < to) {
-          list.insertBefore(dragSrc, target.nextSibling);
-        } else {
-          list.insertBefore(dragSrc, target);
-        }
+        item.classList.remove("dragging");
+        dragIndex = null;
+        overIndex = null;
+        clearDropIndicators_();
       });
     });
+
+    list.addEventListener("dragover", e => {
+      if (dragIndex == null) return;
+      e.preventDefault();
+
+      const target = e.target.closest("li");
+      if (!target) return;
+
+      const targetIndex = Array.from(list.children).indexOf(target);
+      if (targetIndex === -1) return;
+
+      overIndex = targetIndex;
+      showDropIndicator_(target, e.clientY);
+    });
+
+    list.addEventListener("drop", e => {
+      if (dragIndex == null) return;
+      e.preventDefault();
+
+      const target = e.target.closest("li");
+      if (!target) return;
+
+      const targetIndex = Array.from(list.children).indexOf(target);
+      if (targetIndex === -1) return;
+
+      const rect = target.getBoundingClientRect();
+      const insertAfter = e.clientY > rect.top + rect.height / 2;
+      const desired = Math.min(currentRoute.length - 1, targetIndex + (insertAfter ? 1 : 0));
+
+      // Convert desired (which is a slot between items) to a list index
+      // We treat it as "drop onto" the nearest item slot
+      const toIndex = Math.max(0, Math.min(currentRoute.length - 1, desired));
+
+      moveInUnlockedSlots(dragIndex, toIndex);
+      setupCities();
+    });
+
+    // Touch / pointer support (simple, no ghost clone)
+    let pointerDragging = false;
+    let pointerFrom = null;
+    let pointerOverEl = null;
+
+    list.querySelectorAll('li.draggable').forEach((li, idx) => {
+      li.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse') return; // mouse uses native drag
+        pointerDragging = true;
+        pointerFrom = idx;
+        li.classList.add('dragging');
+        li.setPointerCapture(e.pointerId);
+      });
+
+      li.addEventListener('pointermove', (e) => {
+        if (!pointerDragging) return;
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const target = el && el.closest ? el.closest('li') : null;
+        if (!target) return;
+        pointerOverEl = target;
+        showDropIndicator_(target, e.clientY);
+      });
+
+      li.addEventListener('pointerup', (e) => {
+        if (!pointerDragging) return;
+        pointerDragging = false;
+        li.classList.remove('dragging');
+        clearDropIndicators_();
+
+        if (!pointerOverEl) return;
+        const targetIndex = Array.from(list.children).indexOf(pointerOverEl);
+        if (targetIndex === -1) return;
+        const rect = pointerOverEl.getBoundingClientRect();
+        const insertAfter = e.clientY > rect.top + rect.height / 2;
+        const desired = Math.min(currentRoute.length - 1, targetIndex + (insertAfter ? 1 : 0));
+        moveInUnlockedSlots(pointerFrom, desired);
+        setupCities();
+        pointerOverEl = null;
+      });
+    });
+  }
+
+  function clearDropIndicators_() {
+    list.querySelectorAll('.drop-before, .drop-after').forEach(el => {
+      el.classList.remove('drop-before', 'drop-after');
+    });
+  }
+
+  function showDropIndicator_(target, clientY) {
+    clearDropIndicators_();
+    const rect = target.getBoundingClientRect();
+    const after = clientY > rect.top + rect.height / 2;
+    target.classList.add(after ? 'drop-after' : 'drop-before');
   }
 
   newGame();
