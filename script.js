@@ -988,45 +988,87 @@
       setupCities();
     });
 
-    // Touch / pointer support (simple, no ghost clone)
+    // Touch / pointer support (mobile + tablets).
+    // Use event delegation so indices stay correct after reorders.
     let pointerDragging = false;
-    let pointerFrom = null;
+    let pointerFromIndex = -1;
+    let pointerActiveEl = null;
     let pointerOverEl = null;
+    let activePointerId = null;
 
-    list.querySelectorAll('li.draggable').forEach((li, idx) => {
-      li.addEventListener('pointerdown', (e) => {
-        if (e.pointerType === 'mouse') return; // mouse uses native drag
-        pointerDragging = true;
-        pointerFrom = idx;
-        li.classList.add('dragging');
-        li.setPointerCapture(e.pointerId);
-      });
+    function pointerReset_() {
+      pointerDragging = false;
+      pointerFromIndex = -1;
+      if (pointerActiveEl) pointerActiveEl.classList.remove('dragging');
+      pointerActiveEl = null;
+      pointerOverEl = null;
+      activePointerId = null;
+      clearDropIndicators_();
+    }
 
-      li.addEventListener('pointermove', (e) => {
-        if (!pointerDragging) return;
-        const el = document.elementFromPoint(e.clientX, e.clientY);
-        const target = el && el.closest ? el.closest('li') : null;
-        if (!target) return;
+    list.addEventListener('pointerdown', (e) => {
+      // Mouse uses native HTML5 drag.
+      if (e.pointerType === 'mouse') return;
+
+      const li = e.target.closest('li');
+      if (!li) return;
+      if (li.classList.contains('fixed')) return;
+      if (!li.classList.contains('draggable')) return;
+
+      // Prevent page scroll while dragging.
+      e.preventDefault();
+
+      pointerDragging = true;
+      pointerActiveEl = li;
+      pointerFromIndex = Array.from(list.children).indexOf(li);
+      activePointerId = e.pointerId;
+
+      li.classList.add('dragging');
+      li.setPointerCapture(e.pointerId);
+    }, { passive: false });
+
+    list.addEventListener('pointermove', (e) => {
+      if (!pointerDragging) return;
+      if (activePointerId != null && e.pointerId !== activePointerId) return;
+
+      // Prevent page scroll while dragging.
+      e.preventDefault();
+
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const target = el && el.closest ? el.closest('li') : null;
+      if (!target) return;
+      if (target.classList.contains('fixed')) {
+        // Still show indicator on fixed items so user sees where they are.
         pointerOverEl = target;
         showDropIndicator_(target, e.clientY);
-      });
+        return;
+      }
+      pointerOverEl = target;
+      showDropIndicator_(target, e.clientY);
+    }, { passive: false });
 
-      li.addEventListener('pointerup', (e) => {
-        if (!pointerDragging) return;
-        pointerDragging = false;
-        li.classList.remove('dragging');
-        clearDropIndicators_();
+    list.addEventListener('pointerup', (e) => {
+      if (!pointerDragging) return;
+      if (activePointerId != null && e.pointerId !== activePointerId) return;
+      e.preventDefault();
 
-        if (!pointerOverEl) return;
-        const targetIndex = Array.from(list.children).indexOf(pointerOverEl);
-        if (targetIndex === -1) return;
-        const rect = pointerOverEl.getBoundingClientRect();
-        const insertAfter = e.clientY > rect.top + rect.height / 2;
-        const desired = Math.min(currentRoute.length - 1, targetIndex + (insertAfter ? 1 : 0));
-        moveInUnlockedSlots(pointerFrom, desired);
-        setupCities();
-        pointerOverEl = null;
-      });
+      const over = pointerOverEl;
+      const from = pointerFromIndex;
+      pointerReset_();
+
+      if (!over) return;
+      const targetIndex = Array.from(list.children).indexOf(over);
+      if (targetIndex === -1 || from === -1) return;
+
+      const rect = over.getBoundingClientRect();
+      const insertAfter = e.clientY > rect.top + rect.height / 2;
+      const desired = Math.min(currentRoute.length - 1, targetIndex + (insertAfter ? 1 : 0));
+      moveInUnlockedSlots(from, desired);
+      setupCities();
+    }, { passive: false });
+
+    list.addEventListener('pointercancel', () => {
+      pointerReset_();
     });
   }
 
