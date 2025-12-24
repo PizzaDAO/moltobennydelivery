@@ -202,3 +202,11 @@ footer {
 
 /* Remove tooltip tails */
 .leaflet-tooltip::before { display: none !important; }
+
+@media (max-width: 768px) {
+  li {
+    margin: 4px 0;        /* was 8px */
+    padding: 8px 10px;    /* was 12px */
+    font-size: 1rem;      /* slightly tighter */
+  }
+}
