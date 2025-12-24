@@ -5,6 +5,12 @@ body {
   max-width: 600px;
   margin: auto;
 }
+
+/* Hard stop page scrolling while dragging on mobile */
+body.scroll-locked {
+  overflow: hidden;
+  touch-action: none;
+}
 h2 {
   font-size: 1.5rem;
   text-align: center;

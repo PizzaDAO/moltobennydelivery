@@ -996,6 +996,34 @@
     let pointerOverEl = null;
     let activePointerId = null;
 
+    // --- Scroll lock (mobile) ---
+    // On some mobile browsers, preventing default on pointer/touch events
+    // isn't enough to stop page scrolling. We hard-lock body scroll while
+    // dragging, then restore it.
+    let scrollLockY = 0;
+    function lockScroll_() {
+      if (document.body.classList.contains('scroll-locked')) return;
+      scrollLockY = window.scrollY || window.pageYOffset || 0;
+      document.body.classList.add('scroll-locked');
+      // Fix the body in place at the current scroll position.
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollLockY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+    }
+
+    function unlockScroll_() {
+      if (!document.body.classList.contains('scroll-locked')) return;
+      document.body.classList.remove('scroll-locked');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollLockY);
+    }
+
     function pointerReset_() {
       pointerDragging = false;
       pointerFromIndex = -1;
@@ -1004,6 +1032,7 @@
       pointerOverEl = null;
       activePointerId = null;
       clearDropIndicators_();
+      unlockScroll_();
     }
 
     list.addEventListener('pointerdown', (e) => {
@@ -1017,6 +1046,7 @@
 
       // Prevent page scroll while dragging.
       e.preventDefault();
+      lockScroll_();
 
       pointerDragging = true;
       pointerActiveEl = li;
