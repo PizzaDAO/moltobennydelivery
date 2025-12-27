@@ -6,6 +6,31 @@ body {
   margin: auto;
 }
 
+/* Header: gif on the left, title on the right (two lines) */
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+header img {
+  max-width: 200px;
+  height: auto;
+  display: block;
+}
+
+.page-title {
+  text-align: left;
+  margin: 0;
+  line-height: 1.05;
+}
+
+.page-title span {
+  display: block;
+}
+
 /* Layout container so we can keep action buttons on-screen on mobile */
 #citiesSection {
   display: flex;
@@ -22,10 +47,9 @@ body.scroll-locked {
   overflow: hidden;
   touch-action: none;
 }
-h2 {
+
+.page-title {
   font-size: 1.5rem;
-  text-align: center;
-  margin-left:8px;
 }
 .description {
   text-align: center;
@@ -232,9 +256,8 @@ footer {
     max-width: 150px !important;
   }
 
-  h2 {
+  .page-title {
     font-size: 1.25rem;
-    margin-left: 0;
   }
 
   header img {
@@ -247,15 +270,13 @@ footer {
     margin: 6px 10px;
   }
 
-  /* Constrain the whole play area to the viewport.
-     The list scrolls; buttons stay on-screen. */
+  /* Always show the full list (no internal scrollbars). */
   #citiesSection {
-    height: calc(100dvh - 210px);
+    height: auto;
   }
 
   #cityList {
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
     padding-bottom: 6px;
   }
 
@@ -289,9 +310,8 @@ footer {
     margin: 10px;
   }
 
-  h2 {
+  .page-title {
     font-size: 1.25rem;
-    margin-left: 0;
   }
 
   .description {
@@ -299,14 +319,13 @@ footer {
     margin: 6px 6px 10px;
   }
 
-  /* Constrain the whole city section to the viewport so buttons stay visible */
+  /* Always show the full list (no internal scrollbars). */
   #citiesSection {
-    height: calc(100dvh - 220px);
+    height: auto;
   }
 
   #cityList {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: visible;
     padding-bottom: 6px;
   }
 
@@ -347,7 +366,7 @@ footer {
 /* Very small phones: stack buttons */
 @media (max-width: 360px) {
   #citiesSection {
-    height: calc(100dvh - 210px);
+    height: auto;
   }
 
   #buttons {
