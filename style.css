@@ -9,6 +9,7 @@ body {
 /* Header: gif on the left, title on the right (two lines) */
 .header-content {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 14px;
@@ -19,6 +20,19 @@ header img {
   max-width: 200px;
   height: auto;
   display: block;
+}
+
+/* On mobile we still want gif + title side-by-side (not stacked) */
+@media (max-width: 420px) {
+  .header-content {
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
+  .page-title {
+    text-align: left;
+  }
 }
 
 .page-title {
