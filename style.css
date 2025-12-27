@@ -1,6 +1,8 @@
 html, body {
   width: 100%;
   overflow-x: hidden;
+  /* iOS Safari can visually "stretch" the page during touch drag; clip is stricter when supported */
+  overflow-x: clip;
   overscroll-behavior-x: none;
 }
 
@@ -60,11 +62,16 @@ header img {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Let the list take remaining height when we constrain the section */
 #cityList {
   flex: 1;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Hard stop page scrolling while dragging on mobile */
@@ -87,6 +94,10 @@ ul {
   display:flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 li {
   padding: 12px 12px;
@@ -131,7 +142,8 @@ li.draggable:active {
 
 li.dragging {
   opacity: 0.65;
-  transform: scale(1.02);
+  /* Scaling can cause horizontal "page widening" on iOS during drag */
+  transform: none;
   box-shadow: 0 8px 18px rgba(0,0,0,0.12);
 }
 li.correct {
