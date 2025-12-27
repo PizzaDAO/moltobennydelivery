@@ -117,6 +117,7 @@ body.scroll-locked {
 ul {
   list-style: none;
   padding: 0;
+  margin: 0;
   display:flex;
   flex-direction: column;
   align-items: center;
@@ -472,4 +473,38 @@ footer {
   box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Mobile tightening + make buttons match desktop styling */
+@media (max-width: 420px) {
+  /* Reduce space above/below the cities section */
+  #citiesSection {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  #cityList {
+    padding-bottom: 0;
+    margin: 0;
+  }
+
+  /* Decrease vertical space between cities by ~half */
+  #cityList li {
+    margin: 2px 0;
+    padding: 6px 10px;
+  }
+
+  /* Buttons: match desktop look on mobile */
+  #buttons {
+    padding: 0;
+    gap: 0;
+    justify-content: space-between;
+  }
+
+  #buttons button {
+    margin: 10px 5px;
+    padding: 12px 18px;
+    font-size: 1.1rem;
+    width: calc(50% - 12px);
+  }
 }
