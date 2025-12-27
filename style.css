@@ -6,16 +6,25 @@ html, body {
   overscroll-behavior-x: none;
 }
 
-body {
-  touch-action: pan-y;
+/* Keep the entire game within a fixed vertical canvas (useful for embeds) */
+:root {
+  --game-max-height: 570px;
 }
 
 body {
+  touch-action: pan-y;
   font-family: sans-serif;
-  margin: 20px;
-  padding: 0;
+  padding: 10px;
   max-width: 600px;
-  margin: auto;
+  margin: 0 auto;
+  /* Let the page scroll vertically so all cities are always visible */
+  height: auto;
+  max-height: none;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* Header: gif on the left, title on the right (two lines) */
@@ -59,10 +68,14 @@ header img {
 
 /* Layout container so we can keep action buttons on-screen on mobile */
 #citiesSection {
+  overflow-y: visible;
+  overflow-x: hidden;
+
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
   overflow-x: clip;
+  flex: 1;
 }
 
 /* Let the list take remaining height when we constrain the section */
@@ -88,6 +101,19 @@ body.scroll-locked {
   margin-left: 10px;
   margin-right: 10px;
 }
+
+/* Make the main gameplay area fill the fixed-height frame */
+#citiesSection,
+#mapSection {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Override inline map height so it fits within the fixed-height frame */
+#map {
+  height: 100% !important;
+  min-height: 240px;
+}
 ul {
   list-style: none;
   padding: 0;
@@ -102,15 +128,16 @@ ul {
 li {
   padding: 12px 12px;
   background: #eee;
-  margin: 8px 0;
+  margin: 6px 0;
   border-radius: 8px;
   font-size: 1.1rem;
   /* Allow normal scroll unless the tile is actively used for dragging. */
   touch-action: auto;
   user-select: none;
-  width: 100%;
-  max-width: 100%;
-  min-width: 100%;
+  /* Cities should be 75% width and centered */
+  width: 75%;
+  max-width: 75%;
+  min-width: 75%;
   text-align: center;
   display: flex;
   align-items: center;
@@ -131,8 +158,8 @@ li.draggable {
   cursor: grab;
   /* Improves drag reliability on mobile Safari/Chrome by disabling pan/zoom gestures on the draggable tiles. */
   touch-action: none;
-  width: 100%;
-  max-width: 100%;
+  width: 75%;
+  max-width: 75%;
   box-sizing: border-box;
 }
 
@@ -215,12 +242,14 @@ footer {
   text-align: center;
   margin-top: 20px;
   font-size: 0.9rem;
+  margin-bottom: 0;
 }
 
 /* Map section is hidden until the puzzle is solved */
 #mapSection {
   display: none;
   margin-top: 10px;
+  flex: 1;
 }
 
 #mapSection.visible {
@@ -290,7 +319,7 @@ footer {
 /* Small phones: condense list + keep buttons visible without scrolling past them */
 @media (max-width: 420px) {
   body {
-    margin: 10px;
+    padding: 8px;
   }
 
   header img {
@@ -322,8 +351,8 @@ footer {
   }
 
   li {
-    max-width: 92%;
-    min-width: 92%;
+    max-width: 75%;
+    min-width: 75%;
     margin: 3px 0;
     padding: 7px 10px;
     font-size: 0.98rem;
@@ -348,7 +377,7 @@ footer {
 /* Small phones: make the list scroll and tighten spacing so buttons fit */
 @media (max-width: 420px) {
   body {
-    margin: 10px;
+    padding: 8px;
   }
 
   .page-title {
@@ -375,8 +404,8 @@ footer {
   }
 
   li {
-    min-width: 92%;
-    max-width: 92%;
+    min-width: 75%;
+    max-width: 75%;
     margin: 3px 0;
     padding: 7px 10px;
     font-size: 0.98rem;
@@ -418,4 +447,29 @@ footer {
   button {
     width: 100%;
   }
+}
+
+
+/* Compact layout for shorter viewports (aims to keep the whole game visible without clipping) */
+@media (max-height: 650px) {
+  body { padding: 6px; }
+  .header-content img { max-height: 190px; }
+  .page-title { font-size: 32px; line-height: 1.05; }
+  .description { margin: 6px 0 10px; font-size: 16px; }
+  #cityList li { padding: 12px 14px; margin: 10px auto; }
+  #buttons button { padding: 10px 14px; }
+  footer { margin-top: 6px; }
+}
+
+
+/* Ensure ALL city tiles (correct + not-yet-correct) are identical width */
+#cityList li,
+#cityList li.correct,
+#cityList li.incorrect {
+  width: 75%;
+  min-width: 75%;
+  max-width: 75%;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
 }
