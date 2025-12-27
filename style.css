@@ -1,3 +1,13 @@
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+body {
+  touch-action: pan-y;
+}
+
 body {
   font-family: sans-serif;
   margin: 20px;
@@ -49,6 +59,7 @@ header img {
 #citiesSection {
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* Let the list take remaining height when we constrain the section */
@@ -86,8 +97,9 @@ li {
   /* Allow normal scroll unless the tile is actively used for dragging. */
   touch-action: auto;
   user-select: none;
-  max-width: 50%;
-  min-width: 50%;
+  width: 100%;
+  max-width: 100%;
+  min-width: 100%;
   text-align: center;
   display: flex;
   align-items: center;
@@ -108,6 +120,9 @@ li.draggable {
   cursor: grab;
   /* Improves drag reliability on mobile Safari/Chrome by disabling pan/zoom gestures on the draggable tiles. */
   touch-action: none;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 li.draggable:active {
