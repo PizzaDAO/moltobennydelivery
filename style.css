@@ -508,3 +508,116 @@ footer {
     width: calc(50% - 12px);
   }
 }
+
+
+/* Header subtitle aligned under title */
+.header-text {
+  max-width: 260px;
+}
+
+.header-subtitle {
+  margin-top: 6px;
+  line-height: 1.3;
+  font-size: 15px;
+}
+
+@media (max-width: 768px) {
+  .header-text {
+    max-width: 220px;
+  }
+
+  .header-subtitle {
+    font-size: 14px;
+  }
+}
+
+
+/* --- Header layout: keep title + subtitle in right column beside GIF --- */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: nowrap;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  max-width: 260px;
+}
+
+.header-subtitle {
+  text-align: left;
+  max-width: 100%;
+  margin: 6px 0 0 0;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .header {
+    gap: 14px;
+    flex-wrap: nowrap;
+  }
+
+  .header-text {
+    max-width: 220px;
+  }
+
+  .header-subtitle {
+    font-size: 14px;
+    margin-top: 6px;
+  }
+}
+
+
+
+/* --- Header layout: image left, text block right (title + helper text) --- */
+.header-content{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  gap:20px;
+  flex-wrap:nowrap;
+}
+
+.header-text{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  text-align:left;
+  max-width:260px;
+}
+
+.header-text .description{
+  margin:6px 0 0 0;
+  text-align:left;
+  max-width:100%;
+  line-height:1.3;
+}
+
+@media (max-width:768px){
+  .header-content{ gap:14px; }
+  .header-text{ max-width:220px; }
+  .header-text .description{ font-size:14px; }
+}
+
+
+
+/* --- Header vertical centering beside GIF --- */
+.header-content{
+  align-items:center !important;
+}
+
+.header-text{
+  justify-content:center;
+}
+
+/* helper text: balanced wrapping */
+.header-text .description{
+  margin-top:10px;
+  text-wrap:balance;
+}
+

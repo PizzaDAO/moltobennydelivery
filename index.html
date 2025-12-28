@@ -1,53 +1,46 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>✮️🌍🍕 Molto Benny's Delivery Route</title>
-  <!-- Cache-bust on GitHub Pages / mobile Safari -->
-  <link rel="stylesheet" href="style.css?v=3">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-  
-</head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>✮️🌍🍕 Molto Benny's Delivery Route</title>
+<!-- Cache-bust on GitHub Pages / mobile Safari -->
+<link href="style.css?v=3" rel="stylesheet"/>
+<link href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" rel="stylesheet">
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+</link></head>
 <body>
-  <header>
-    <div class="header-content">
-      <img src="https://images.squarespace-cdn.com/content/v1/6462e2c2553b2d3fc022842f/d9c2a6aa-8949-4d23-a9d7-757a2d87e62e/Global_PizzaParty_Animate-ONLY_950.gif?format=750w" alt="Pizza Plane">
-      <h2 class="page-title" aria-label="Molto Benny's Delivery Route">
-        <span>Molto Benny's</span>
-        <span>Delivery Route</span>
-      </h2>
-    </div>
-  </header>
+<header>
+<div class="header-content">
+<img alt="Pizza Plane" src="https://images.squarespace-cdn.com/content/v1/6462e2c2553b2d3fc022842f/d9c2a6aa-8949-4d23-a9d7-757a2d87e62e/Global_PizzaParty_Animate-ONLY_950.gif?format=750w"/><div class="header-text"><h2 aria-label="Molto Benny's Delivery Route" class="page-title">
+<span>Molto Benny's</span>
+<span>Delivery Route</span>
+</h2><p class="description">Help Benny plan the shortest<br>Global Pizza Party<br>delivery route!</p></div>
 
-  <p class="description">
-    Help Benny plan the shortest Global Pizza Party delivery route!
-  </p>
+</div>
+</header>
 
-  <!-- Cities / ordering UI -->
-  <section id="citiesSection">
-    <ul id="cityList"></ul>
-
-    <div id="buttons">
-      <button onclick="calculateTrip()">Calculate</button>
-      <button onclick="refreshGame()">New Game</button>
-    </div>
-
-    <p id="result"></p>
-    <p id="counter">Attempts: 0</p>
-  </section>
-
-  <!-- Map UI (revealed on success, replaces the cities section) -->
-  <section id="mapSection" aria-hidden="true">
-    <div id="map" style="height: 400px; width: 100%;"></div>
-    <div id="mapButtons">
-      <button onclick="refreshGame()">New Game</button>
-    </div>
-  </section>
-  <footer>
+<!-- Cities / ordering UI -->
+<section id="citiesSection">
+<ul id="cityList"></ul>
+<div id="buttons">
+<button onclick="calculateTrip()">Calculate</button>
+<button onclick="refreshGame()">New Game</button>
+</div>
+<p id="result"></p>
+<p id="counter">Attempts: 0</p>
+</section>
+<!-- Map UI (revealed on success, replaces the cities section) -->
+<section aria-hidden="true" id="mapSection">
+<div id="map" style="height: 400px; width: 100%;"></div>
+<div id="mapButtons">
+<button onclick="refreshGame()">New Game</button>
+</div>
+</section>
+<footer>
     Inspired by PizzaDAO's <a href="https://globalpizza.party" target="_blank">Global Pizza Party</a> 🍕
   </footer>
-  <script src="script.js?v=2"></script>
+<script src="script.js?v=2"></script>
 </body>
 </html>
