@@ -427,6 +427,10 @@
   let startCity = "";
   let attemptCount = 0;
 
+  // Stats for the HUD on the map screen
+  let firstGuessDistance = null;
+  let lastGuessDistance = null;
+
   // When true, the round is completed and we show the map instead of the city list
   let solved = false;
 
@@ -445,7 +449,9 @@
   const counter = document.getElementById("counter");
 
   const citiesSection = document.getElementById("citiesSection");
+  const mapStatsSection = document.getElementById("mapStatsSection");
   const mapSection = document.getElementById("mapSection");
+  const mapStats = document.getElementById("mapStats");
 
   // Leaflet map instance (so we can cleanly re-init)
   let leafletMap = null;
@@ -497,6 +503,8 @@
     selectedCities = pickRandomCities(8);
     startCity = selectedCities[0];
     attemptCount = 0;
+    firstGuessDistance = null;
+    lastGuessDistance = null;
     bestRoute = null;
     bestDistance = Infinity;
     lockedIndices = new Set([0]);
@@ -518,9 +526,14 @@
     updateCounter();
     setupCities();
     hideMap();
+    updateMapStats_();
 
     // Ensure the city UI is visible and map UI is hidden at the start of a round
     if (citiesSection) citiesSection.style.display = "";
+    if (mapStatsSection) {
+      mapStatsSection.classList.remove("visible");
+      mapStatsSection.setAttribute("aria-hidden", "true");
+    }
     if (mapSection) {
       mapSection.classList.remove("visible");
       mapSection.setAttribute("aria-hidden", "true");
@@ -597,7 +610,12 @@
 
     const userRoute = [...currentRoute];
     const userDistance = totalDistance(userRoute);
+    lastGuessDistance = userDistance;
     attemptCount++;
+
+    if (attemptCount === 1) {
+      firstGuessDistance = userDistance;
+    }
     updateCounter();
 
     // Update correctness + lock in any positions that are correct
@@ -632,15 +650,41 @@
       // Wait twice as long as the falling emojis take to finish.
       window.setTimeout(() => {
         if (citiesSection) citiesSection.style.display = "none";
+        if (mapStatsSection) {
+          mapStatsSection.classList.add("visible");
+          mapStatsSection.setAttribute("aria-hidden", "false");
+        }
         if (mapSection) {
           mapSection.classList.add("visible");
           mapSection.setAttribute("aria-hidden", "false");
         }
         showMap(bestRoute);
+        updateMapStats_();
       }, FALLING_EMOJI_DURATION_MS);
     } else {
       hideMap();
     }
+  }
+
+  function updateMapStats_() {
+    if (!mapStats) return;
+
+    const isVisible = mapSection?.classList?.contains("visible");
+    if (!isVisible) {
+      mapStats.textContent = "";
+      mapStats.style.display = "none";
+      return;
+    }
+
+    const distText = Number.isFinite(bestDistance) ? `${bestDistance.toFixed(1)} km` : "—";
+    const firstText = (firstGuessDistance == null) ? "—" : `${firstGuessDistance.toFixed(1)} km`;
+
+    // Render as inline stats so they can be laid out horizontally with CSS.
+    mapStats.innerHTML =
+      `<span class="stat">Attempts: ${attemptCount}</span>` +
+      `<span class="stat">Distance: ${distText}</span>` +
+      `<span class="stat">First Guess: ${firstText}</span>`;
+    mapStats.style.display = "block";
   }
 
   // --- Drag & drop with locked slots ---
@@ -693,10 +737,16 @@
   
   function showMap(route) {
     // Ensure map section is visible (Leaflet needs a visible container)
+    if (mapStatsSection) {
+      mapStatsSection.classList.add("visible");
+      mapStatsSection.setAttribute("aria-hidden", "false");
+    }
     if (mapSection) {
       mapSection.classList.add("visible");
       mapSection.setAttribute("aria-hidden", "false");
     }
+
+    updateMapStats_();
 
     // Clean up any prior map instance
     if (leafletMap) {
@@ -705,7 +755,9 @@
     }
 
     // Initialize the map
-    const map = L.map('map').setView(cityCoords[route[0]], 2);
+    // worldCopyJump helps Leaflet handle shapes that use longitudes outside [-180, 180]
+    // (which we intentionally do below to force correct dateline wrapping).
+    const map = L.map('map', { worldCopyJump: true }).setView(cityCoords[route[0]], 2);
     leafletMap = map;
     const mapElement = document.getElementById('map');
     
@@ -718,78 +770,128 @@
     }).addTo(map);
   
     // Get coordinates for the route
-    let routeCoordinates = route.map(city => cityCoords[city]);
-    
-    // Create a function to adjust longitude for crossing the 180° meridian
-    function adjustLongitude(coord1, coord2, hasCrossedMeridian, adjustment) {
-      const [lon1, lon2] = [coord1[1], coord2[1]];
-      
-      // If we haven't crossed the meridian yet, check if we need to
-      if (!hasCrossedMeridian) {
-        if (Math.abs(lon2 - lon1) > 180) {
-          // Determine which way to adjust based on the first crossing
-          adjustment = lon2 > lon1 ? -360 : 360;
-          return [coord2[0], lon2 + adjustment, true, adjustment];
+    const routeCoordinates = route.map(city => cityCoords[city]);
+
+    // Leaflet (and some polyline utilities) will sometimes draw the "long way" across the world
+    // when a segment crosses the antimeridian (±180°). To force the correct wrap direction,
+    // we "unwrap" longitudes so each next point is the closest +/-360° representation
+    // relative to the previous point.
+    const unwrapRouteLongitudes_ = (coords) => {
+      if (!coords || coords.length === 0) return coords;
+
+      const out = [[coords[0][0], coords[0][1]]];
+      let prevLng = coords[0][1];
+
+      for (let i = 1; i < coords.length; i++) {
+        const [lat, lngRaw] = coords[i];
+        const candidates = [lngRaw, lngRaw + 360, lngRaw - 360];
+        let bestLng = candidates[0];
+        let bestDiff = Math.abs(candidates[0] - prevLng);
+
+        for (let c = 1; c < candidates.length; c++) {
+          const diff = Math.abs(candidates[c] - prevLng);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestLng = candidates[c];
+          }
         }
-      } else {
-        // If we've already crossed the meridian, apply the same adjustment
-        return [coord2[0], lon2 + adjustment, true, adjustment];
+
+        out.push([lat, bestLng]);
+        prevLng = bestLng;
       }
-      
-      return [coord2[0], lon2, false, adjustment];
-    }
+      return out;
+    };
 
-    // Create adjusted coordinates for the polyline
-    let adjustedCoordinates = [];
-    let hasCrossedMeridian = false;
-    let adjustment = 0;
-    
-    // First pass: adjust all coordinates except the last one
-    for (let i = 0; i < routeCoordinates.length - 1; i++) {
-      if (i === 0) {
-        adjustedCoordinates.push(routeCoordinates[0]);
-      } else {
-        const [lat, lon, crossed, adj] = adjustLongitude(
-          adjustedCoordinates[i-1], 
-          routeCoordinates[i],
-          hasCrossedMeridian,
-          adjustment
-        );
-        adjustedCoordinates.push([lat, lon]);
-        hasCrossedMeridian = crossed;
-        adjustment = adj;
+    const routeCoordinatesUnwrapped = unwrapRouteLongitudes_(routeCoordinates);
+
+    // --- Route line (dateline-safe) ---
+    // Even with geodesic plugins, Leaflet will *wrap* longitudes back into [-180, 180]
+    // when projecting points to screen space. That can still produce a "long way around"
+    // visual for segments that should cross the antimeridian. The most reliable fix is:
+    // 1) generate a dense line (geodesic if available),
+    // 2) split it into multiple polylines wherever it jumps across ±180°.
+
+    const geodesicFactory =
+      (typeof L.geodesic === 'function' && L.geodesic) ||
+      (typeof L.Geodesic === 'function' && ((coords, opts) => new L.Geodesic(coords, opts)));
+
+    const splitAtAntimeridian_ = (latlngs) => {
+      const segments = [];
+      let current = [];
+      const toLatLng = (p) => (p && typeof p.lat === 'number' ? p : L.latLng(p[0], p[1]));
+
+      for (let i = 0; i < latlngs.length; i++) {
+        const pt = toLatLng(latlngs[i]);
+        if (current.length === 0) {
+          current.push(pt);
+          continue;
+        }
+
+        const prev = current[current.length - 1];
+        const d = Math.abs(pt.lng - prev.lng);
+
+        if (d <= 180) {
+          current.push(pt);
+          continue;
+        }
+
+        // Interpolate a crossing point at ±180.
+        // Choose which side to cross based on the direction of the jump.
+        const crossingLng = prev.lng > pt.lng ? 180 : -180;
+
+        // Unwrap current point to be "near" prev for interpolation.
+        const ptLngNear = pt.lng + (prev.lng > pt.lng ? 360 : -360);
+        const t = (crossingLng - prev.lng) / (ptLngNear - prev.lng);
+        const crossingLat = prev.lat + t * (pt.lat - prev.lat);
+
+        // End current segment at the dateline edge...
+        current.push(L.latLng(crossingLat, crossingLng));
+        segments.push(current);
+
+        // ...and start next segment on the opposite edge.
+        current = [L.latLng(crossingLat, crossingLng === 180 ? -180 : 180), pt];
+      }
+
+      if (current.length) segments.push(current);
+      return segments;
+    };
+
+    // Build a dense set of points for the whole route
+    let densePoints = routeCoordinatesUnwrapped.map(([lat, lng]) => L.latLng(lat, lng));
+
+    if (geodesicFactory) {
+      try {
+        // Create a geodesic *without* adding to the map; we just want the sampled points.
+        const tmp = geodesicFactory(routeCoordinatesUnwrapped, { steps: 128 });
+        const ll = tmp && typeof tmp.getLatLngs === 'function' ? tmp.getLatLngs() : null;
+        // leaflet.geodesic returns an array-of-arrays for multi-lines; flatten safely.
+        if (Array.isArray(ll)) {
+          densePoints = (Array.isArray(ll[0]) ? ll.flat() : ll).map(p => (p && p.lat != null ? p : L.latLng(p[0], p[1])));
+        }
+      } catch (e) {
+        // If anything goes wrong, we fall back to the straight segments.
       }
     }
 
-    // Second pass: adjust the last coordinate if we've crossed the meridian
-    if (hasCrossedMeridian) {
-      const lastCoord = routeCoordinates[routeCoordinates.length - 1];
-      const [lat, lon] = adjustLongitude(
-        adjustedCoordinates[adjustedCoordinates.length - 1],
-        lastCoord,
-        true,
-        adjustment
-      );
-      adjustedCoordinates.push([lat, lon]);
-    } else {
-      adjustedCoordinates.push(routeCoordinates[routeCoordinates.length - 1]);
+    const segments = splitAtAntimeridian_(densePoints);
+    const routeLineLayers = segments.map(seg => L.polyline(seg, { weight: 4, color: 'blue' }).addTo(map));
+
+    // Fit bounds to all segments
+    if (routeLineLayers.length) {
+      const all = L.featureGroup(routeLineLayers);
+      map.fitBounds(all.getBounds(), { padding: [20, 20] });
     }
 
-    // Create a bounding box that will fit all the cities in the route
-    const bounds = L.latLngBounds(routeCoordinates);
-    map.fitBounds(bounds);
-    
-    // Add the polyline with adjusted coordinates
-    L.polyline(adjustedCoordinates, { color: 'blue', weight: 4 }).addTo(map);
-  
-    // Add markers + always-visible labels for each city using the adjusted coordinates
+    // Add markers + always-visible labels for each city
+    // IMPORTANT: Use the *unwrapped* longitudes so markers/labels stay on the
+    // same world-copy as the route line when crossing the antimeridian.
     const labelTooltips = [];
 
-    adjustedCoordinates.forEach(([lat, lon], index) => {
+    routeCoordinatesUnwrapped.forEach(([lat, lon], index) => {
       let markerOptions = {};
       if (index === 0) {
         markerOptions = { color: 'green' };
-      } else if (index === adjustedCoordinates.length - 1) {
+      } else if (index === routeCoordinatesUnwrapped.length - 1) {
         markerOptions = { color: 'red' };
       }
 
@@ -917,10 +1019,21 @@
       leafletMap = null;
     }
 
+    if (mapStatsSection) {
+      mapStatsSection.classList.remove("visible");
+      mapStatsSection.setAttribute("aria-hidden", "true");
+    }
     if (mapSection) {
       mapSection.classList.remove("visible");
       mapSection.setAttribute("aria-hidden", "true");
     }
+
+    if (mapStatsSection) {
+      mapStatsSection.classList.remove("visible");
+      mapStatsSection.setAttribute("aria-hidden", "true");
+    }
+
+    updateMapStats_();
   }
   
   function makeSortable() {

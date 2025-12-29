@@ -6,9 +6,12 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>✮️🌍🍕 Molto Benny's Delivery Route</title>
 <!-- Cache-bust on GitHub Pages / mobile Safari -->
-<link href="style.css?v=3" rel="stylesheet"/>
-<link href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" rel="stylesheet">
-<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<link href="style.css?v=4" rel="stylesheet"/>
+<!-- Leaflet (newer version for better plugin compatibility) -->
+<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Great-circle (dateline-safe) route drawing -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet.geodesic@2.7.1/dist/leaflet.geodesic.min.js"></script>
 </link></head>
 <body>
 <header>
@@ -32,8 +35,11 @@
 <p id="counter">Attempts: 0</p>
 </section>
 <!-- Map UI (revealed on success, replaces the cities section) -->
+<section aria-hidden="true" id="mapStatsSection">
+  <div aria-live="polite" class="map-stats" id="mapStats"></div>
+</section>
 <section aria-hidden="true" id="mapSection">
-<div id="map" style="height: 400px; width: 100%;"></div>
+<div id="map"></div>
 <div id="mapButtons">
 <button onclick="refreshGame()">New Game</button>
 </div>
@@ -41,6 +47,6 @@
 <footer>
     Inspired by PizzaDAO's <a href="https://globalpizza.party" target="_blank">Global Pizza Party</a> 🍕
   </footer>
-<script src="script.js?v=2"></script>
+<script src="script.js?v=3"></script>
 </body>
 </html>

@@ -9,6 +9,8 @@ html, body {
 /* Keep the entire game within a fixed vertical canvas (useful for embeds) */
 :root {
   --game-max-height: 570px;
+  /* Map is 1.25× taller than the previous 400px */
+  --map-height: 500px;
 }
 
 body {
@@ -109,9 +111,10 @@ body.scroll-locked {
   min-height: 0;
 }
 
-/* Override inline map height so it fits within the fixed-height frame */
+/* Map size */
 #map {
-  height: 100% !important;
+  width: 100%;
+  height: var(--map-height);
   min-height: 240px;
 }
 ul {
@@ -246,11 +249,22 @@ footer {
   margin-bottom: 0;
 }
 
+/* Map stats section (hidden until the puzzle is solved) */
+#mapStatsSection {
+  display: none;
+  margin-top: 10px;
+}
+
+#mapStatsSection.visible {
+  display: block;
+}
+
 /* Map section is hidden until the puzzle is solved */
 #mapSection {
   display: none;
   margin-top: 10px;
   flex: 1;
+  position: relative;
 }
 
 #mapSection.visible {
@@ -265,6 +279,26 @@ footer {
 
 #mapButtons button {
   width: 100%;
+}
+
+/* Map stats (shown ABOVE the map, not over it) */
+.map-stats {
+  /* Match the styling of the in-game Attempts line (#counter) */
+  position: static;
+  font-style: italic;
+  margin-top: 5px;
+  margin-bottom: 10px;
+
+  /* Lay out the three stats horizontally */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.map-stats .stat {
+  white-space: nowrap;
 }
 
 /* Falling confetti emoji */
@@ -621,3 +655,23 @@ footer {
   text-wrap:balance;
 }
 
+
+
+/* Map stats layout */
+#mapStats {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+}
+
+#mapStats .stat {
+  font-style: normal;
+  white-space: nowrap;
+  margin-right: 16px;
+}
+
+#mapStats .stat:last-child {
+  margin-right: 0;
+}
