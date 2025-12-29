@@ -113,9 +113,18 @@ body.scroll-locked {
 
 /* Map size */
 #map {
+<<<<<<< HEAD
+  /* Match the city tile width */
+  width: 75%;
+  height: var(--map-height);
+  min-height: 240px;
+  margin-left: auto;
+  margin-right: auto;
+=======
   width: 100%;
   height: var(--map-height);
   min-height: 240px;
+>>>>>>> ad11fc193f7c0cda129e069fa342ecebccb73d9b
 }
 ul {
   list-style: none;
@@ -225,22 +234,42 @@ button {
   margin: 10px 5px;
   padding: 12px 18px;
   font-size: 1.1rem;
-  width: calc(50% - 12px);
+  width: auto;
 }
 #buttons {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: space-between;
+  gap: 12px;
+  /* Match the city tile width */
+  width: 75%;
+  max-width: 75%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Make the two buttons split the row evenly */
+#buttons button {
+  flex: 1;
+  margin: 10px 0;
 }
 #result {
   font-weight: bold;
   margin-top: 15px;
-  margin-left: 10px;
+  /* Match the city tile width and align with the cities/buttons */
+  width: 75%;
+  max-width: 75%;
+  margin-left: auto;
+  margin-right: auto;
 }
 #counter {
   font-style: italic;
   margin-top: 5px;
-  margin-left: 10px;
+  /* Match the city tile width and align with the cities/buttons */
+  width: 75%;
+  max-width: 75%;
+  margin-left: auto;
+  margin-right: auto;
 }
 footer {
   text-align: center;
@@ -253,6 +282,14 @@ footer {
 #mapStatsSection {
   display: none;
   margin-top: 10px;
+<<<<<<< HEAD
+  /* Keep the stats block aligned with the city tiles */
+  width: 75%;
+  max-width: 75%;
+  margin-left: auto;
+  margin-right: auto;
+=======
+>>>>>>> ad11fc193f7c0cda129e069fa342ecebccb73d9b
 }
 
 #mapStatsSection.visible {
@@ -275,6 +312,10 @@ footer {
   display: flex;
   justify-content: center;
   margin-top: 10px;
+  /* Match the city tile width */
+  width: 75%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 #mapButtons button {
@@ -289,6 +330,12 @@ footer {
   margin-top: 5px;
   margin-bottom: 10px;
 
+<<<<<<< HEAD
+  /* Match the city tile width and alignment */
+  width: 100%;
+
+=======
+>>>>>>> ad11fc193f7c0cda129e069fa342ecebccb73d9b
   /* Lay out the three stats horizontally */
   display: flex;
   flex-wrap: wrap;
@@ -397,11 +444,11 @@ footer {
     padding: 6px 0 2px;
   }
 
-  button {
-    margin: 6px 4px;
+  #buttons button {
+    margin: 6px 0;
     padding: 10px 10px;
     font-size: 1rem;
-    width: calc(50% - 10px);
+    width: auto;
   }
 
   #result {
@@ -460,11 +507,11 @@ footer {
     font-size: 0.92rem;
   }
 
-  button {
+  #buttons button {
     margin: 6px 0;
     padding: 10px 12px;
     font-size: 1rem;
-    width: calc(50% - 4px);
+    width: auto;
   }
 }
 
@@ -531,15 +578,26 @@ footer {
   /* Buttons: match desktop look on mobile */
   #buttons {
     padding: 0;
+<<<<<<< HEAD
+    gap: 12px;
+=======
     gap: 0;
+>>>>>>> ad11fc193f7c0cda129e069fa342ecebccb73d9b
     justify-content: space-between;
   }
 
   #buttons button {
+<<<<<<< HEAD
+    margin: 10px 0;
+    padding: 12px 18px;
+    font-size: 1.1rem;
+    width: auto;
+=======
     margin: 10px 5px;
     padding: 12px 18px;
     font-size: 1.1rem;
     width: calc(50% - 12px);
+>>>>>>> ad11fc193f7c0cda129e069fa342ecebccb73d9b
   }
 }
 
