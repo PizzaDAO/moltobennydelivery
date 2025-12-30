@@ -1,0 +1,726 @@
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+  /* iOS Safari can visually "stretch" the page during touch drag; clip is stricter when supported */
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+/* Keep the entire game within a fixed vertical canvas (useful for embeds) */
+:root {
+  --game-max-height: 570px;
+  /* Map is 1.25× taller than the previous 400px */
+  --map-height: 500px;
+}
+
+body {
+  touch-action: pan-y;
+  font-family: sans-serif;
+  padding: 10px;
+  max-width: 600px;
+  margin: 0 auto;
+  /* Let the page scroll vertically so all cities are always visible */
+  height: auto;
+  max-height: none;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Header: gif on the left, title on the right (two lines) */
+.header-content {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+header img {
+  max-width: 200px;
+  height: auto;
+  display: block;
+}
+
+/* On mobile we still want gif + title side-by-side (not stacked) */
+@media (max-width: 420px) {
+  .header-content {
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
+  .page-title {
+    text-align: left;
+  }
+}
+
+.page-title {
+  text-align: left;
+  margin: 0;
+  line-height: 1.05;
+}
+
+.page-title span {
+  display: block;
+}
+
+/* Layout container so we can keep action buttons on-screen on mobile */
+#citiesSection {
+  overflow-y: visible;
+  overflow-x: hidden;
+
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-x: clip;
+  flex: 1;
+}
+
+/* Let the list take remaining height when we constrain the section */
+#cityList {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+/* Hard stop page scrolling while dragging on mobile */
+body.scroll-locked {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.page-title {
+  font-size: 1.5rem;
+}
+.description {
+  text-align: center;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+/* Make the main gameplay area fill the fixed-height frame */
+#citiesSection,
+#mapSection {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Map size */
+#map {
+  /* Match the city tile width */
+  width: 75%;
+  height: var(--map-height);
+  min-height: 240px;
+  margin-left: auto;
+  margin-right: auto;
+}
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display:flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+li {
+  padding: 12px 12px;
+  background: #eee;
+  margin: 6px 0;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  /* Allow normal scroll unless the tile is actively used for dragging. */
+  touch-action: auto;
+  user-select: none;
+  /* Cities should be 75% width and centered */
+  width: 75%;
+  max-width: 75%;
+  min-width: 75%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+li .handle {
+  font-weight: 700;
+  opacity: 0.55;
+  letter-spacing: -2px;
+  user-select: none;
+}
+
+li.draggable {
+  cursor: grab;
+  /* Improves drag reliability on mobile Safari/Chrome by disabling pan/zoom gestures on the draggable tiles. */
+  touch-action: none;
+  width: 75%;
+  max-width: 75%;
+  box-sizing: border-box;
+}
+
+li.draggable:active {
+  cursor: grabbing;
+}
+
+li.dragging {
+  opacity: 0.65;
+  /* Scaling can cause horizontal "page widening" on iOS during drag */
+  transform: none;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+}
+li.correct {
+  background-color: #c8f7c5;
+}
+li.incorrect {
+  background-color: #f8c8c8;
+}
+li.fixed {
+  cursor: not-allowed;
+  opacity: 0.95;
+}
+
+/* Start city styling (blue like the original Casablanca tile) */
+li.start {
+  background: #cfe6ff;
+  border: 1px solid rgba(70, 130, 180, 0.25);
+}
+
+li.locked {
+  background-color: #c8f7c5;
+}
+
+li.fixed .handle {
+  opacity: 0.25;
+}
+
+/* Drop indicator (shows where the item will land) */
+li.drop-before::before,
+li.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 0;
+  border-top: 3px solid rgba(0,0,0,0.35);
+  border-radius: 3px;
+}
+
+li.drop-before::before {
+  top: -2px;
+}
+
+li.drop-after::after {
+  bottom: -2px;
+}
+button {
+  margin: 10px 5px;
+  padding: 12px 18px;
+  font-size: 1.1rem;
+  width: auto;
+}
+#buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  gap: 12px;
+  /* Match the city tile width */
+  width: 75%;
+  max-width: 75%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Make the two buttons split the row evenly */
+#buttons button {
+  flex: 1;
+  margin: 10px 0;
+}
+#result {
+  font-weight: bold;
+  margin-top: 15px;
+  /* Match the city tile width and align with the cities/buttons */
+  width: 75%;
+  max-width: 75%;
+  margin-left: auto;
+  margin-right: auto;
+}
+#counter {
+  font-style: italic;
+  margin-top: 5px;
+  /* Match the city tile width and align with the cities/buttons */
+  width: 75%;
+  max-width: 75%;
+  margin-left: auto;
+  margin-right: auto;
+}
+footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+/* Map stats section (hidden until the puzzle is solved) */
+#mapStatsSection {
+  display: none;
+  margin-top: 10px;
+  /* It's now nested inside #mapButtons (which already matches tile width). */
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+#mapStatsSection.visible {
+  display: block;
+}
+
+/* Map section is hidden until the puzzle is solved */
+#mapSection {
+  display: none;
+  margin-top: 10px;
+  flex: 1;
+  position: relative;
+}
+
+#mapSection.visible {
+  display: block;
+}
+
+#mapButtons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 10px;
+  /* Match the city tile width */
+  width: 75%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#mapButtons button {
+  width: 100%;
+}
+
+/* Match the styling used by #result + #counter on the map screen */
+#mapResult {
+  font-weight: bold;
+  margin-top: 15px;
+  width: 100%;
+}
+
+#mapCounter {
+  font-style: italic;
+  margin-top: 5px;
+  width: 100%;
+}
+
+/* Map stats (shown ABOVE the map, not over it) */
+.map-stats {
+  /* Match the styling of the in-game Attempts line (#counter) */
+  position: static;
+  font-style: italic;
+  margin-top: 5px;
+  margin-bottom: 10px;
+
+  /* Match the city tile width and alignment */
+  width: 100%;
+
+  /* Lay out the three stats horizontally */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.map-stats .stat {
+  white-space: nowrap;
+}
+
+/* Falling confetti emoji */
+.confetti-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 9999;
+}
+
+/* Always-visible map point labels */
+.leaflet-tooltip.city-label {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #111;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
+}
+
+.leaflet-tooltip.city-label:before {
+  border-top-color: rgba(255, 255, 255, 0.92);
+}
+
+.confetti-emoji {
+  position: absolute;
+  top: -40px;
+  font-size: 28px;
+  animation: confetti-fall 1.8s linear forwards;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.18));
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0.95; }
+}
+
+/* Remove tooltip tails */
+.leaflet-tooltip::before { display: none !important; }
+
+@media (max-width: 768px) {
+  li {
+    margin: 4px 0;        /* was 8px */
+    padding: 8px 10px;    /* was 12px */
+    font-size: 1rem;      /* slightly tighter */
+  }
+}
+
+/* Small phones: condense list + keep buttons visible without scrolling past them */
+@media (max-width: 420px) {
+  body {
+    padding: 8px;
+  }
+
+  header img {
+    max-width: 150px !important;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  header img {
+    max-width: 150px;
+    margin-bottom: 6px;
+  }
+
+  .description {
+    font-size: 0.95rem;
+    margin: 6px 10px;
+  }
+
+  /* Always show the full list (no internal scrollbars). */
+  #citiesSection {
+    height: auto;
+  }
+
+  #cityList {
+    overflow: visible;
+    padding-bottom: 6px;
+  }
+
+  li {
+    max-width: 75%;
+    min-width: 75%;
+    margin: 3px 0;
+    padding: 7px 10px;
+    font-size: 0.98rem;
+  }
+
+  #buttons {
+    padding: 6px 0 2px;
+  }
+
+  #buttons button {
+    margin: 6px 0;
+    padding: 10px 10px;
+    font-size: 1rem;
+    width: auto;
+  }
+
+  #result {
+    margin-top: 10px;
+  }
+}
+
+/* Small phones: make the list scroll and tighten spacing so buttons fit */
+@media (max-width: 420px) {
+  body {
+    padding: 8px;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .description {
+    font-size: 0.95rem;
+    margin: 6px 6px 10px;
+  }
+
+  /* Always show the full list (no internal scrollbars). */
+  #citiesSection {
+    height: auto;
+  }
+
+  #cityList {
+    overflow-y: visible;
+    padding-bottom: 6px;
+  }
+
+  ul {
+    width: 100%;
+  }
+
+  li {
+    min-width: 75%;
+    max-width: 75%;
+    margin: 3px 0;
+    padding: 7px 10px;
+    font-size: 0.98rem;
+  }
+
+  #buttons {
+    gap: 8px;
+  }
+
+  #result {
+    margin-top: 8px;
+    font-size: 0.98rem;
+  }
+
+  #counter {
+    margin-top: 4px;
+    font-size: 0.92rem;
+  }
+
+  #buttons button {
+    margin: 6px 0;
+    padding: 10px 12px;
+    font-size: 1rem;
+    width: auto;
+  }
+}
+
+/* Very small phones: stack buttons */
+@media (max-width: 360px) {
+  #citiesSection {
+    height: auto;
+  }
+
+  #buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+
+
+/* Compact layout for shorter viewports (aims to keep the whole game visible without clipping) */
+@media (max-height: 650px) {
+  body { padding: 6px; }
+  .header-content img { max-height: 190px; }
+  .page-title { font-size: 32px; line-height: 1.05; }
+  .description { margin: 6px 0 10px; font-size: 16px; }
+  #cityList li { padding: 12px 14px; margin: 10px auto; }
+  #buttons button { padding: 10px 14px; }
+  footer { margin-top: 6px; }
+}
+
+
+/* Ensure ALL city tiles (correct + not-yet-correct) are identical width */
+#cityList li,
+#cityList li.correct,
+#cityList li.incorrect {
+  width: 75%;
+  min-width: 75%;
+  max-width: 75%;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Mobile tightening + make buttons match desktop styling */
+@media (max-width: 420px) {
+  /* Reduce space above/below the cities section */
+  #citiesSection {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  #cityList {
+    padding-bottom: 0;
+    margin: 0;
+  }
+
+  /* Decrease vertical space between cities by ~half */
+  #cityList li {
+    margin: 2px 0;
+    padding: 6px 10px;
+  }
+
+  /* Buttons: match desktop look on mobile */
+  #buttons {
+    padding: 0;
+    gap: 12px;
+    justify-content: space-between;
+  }
+
+  #buttons button {
+    margin: 10px 0;
+    padding: 12px 18px;
+    font-size: 1.1rem;
+    width: auto;
+  }
+}
+
+
+/* Header subtitle aligned under title */
+.header-text {
+  max-width: 260px;
+}
+
+.header-subtitle {
+  margin-top: 6px;
+  line-height: 1.3;
+  font-size: 15px;
+}
+
+@media (max-width: 768px) {
+  .header-text {
+    max-width: 220px;
+  }
+
+  .header-subtitle {
+    font-size: 14px;
+  }
+}
+
+
+/* --- Header layout: keep title + subtitle in right column beside GIF --- */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: nowrap;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  max-width: 260px;
+}
+
+.header-subtitle {
+  text-align: left;
+  max-width: 100%;
+  margin: 6px 0 0 0;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .header {
+    gap: 14px;
+    flex-wrap: nowrap;
+  }
+
+  .header-text {
+    max-width: 220px;
+  }
+
+  .header-subtitle {
+    font-size: 14px;
+    margin-top: 6px;
+  }
+}
+
+
+
+/* --- Header layout: image left, text block right (title + helper text) --- */
+.header-content{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  gap:20px;
+  flex-wrap:nowrap;
+}
+
+.header-text{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  text-align:left;
+  max-width:260px;
+}
+
+.header-text .description{
+  margin:6px 0 0 0;
+  text-align:left;
+  max-width:100%;
+  line-height:1.3;
+}
+
+@media (max-width:768px){
+  .header-content{ gap:14px; }
+  .header-text{ max-width:220px; }
+  .header-text .description{ font-size:14px; }
+}
+
+
+
+/* --- Header vertical centering beside GIF --- */
+.header-content{
+  align-items:center !important;
+}
+
+.header-text{
+  justify-content:center;
+}
+
+/* helper text: balanced wrapping */
+.header-text .description{
+  margin-top:10px;
+  text-wrap:balance;
+}
+
+
+
+/* Map stats layout */
+#mapStats {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+}
+
+#mapStats .stat {
+  font-style: normal;
+  white-space: nowrap;
+  margin-right: 16px;
+}
+
+#mapStats .stat:last-child {
+  margin-right: 0;
+}
