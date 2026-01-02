@@ -795,3 +795,21 @@ body::before{
 
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-120 -120 240 240'%3E%3Cg fill='none' stroke='rgba(60,120,170,0.45)' stroke-width='1'%3E%3Ccircle cx='0' cy='0' r='100'/%3E%3C!-- latitude --%3E%3Cellipse cx='0' cy='0' rx='100' ry='85'/%3E%3Cellipse cx='0' cy='0' rx='100' ry='70'/%3E%3Cellipse cx='0' cy='0' rx='100' ry='55'/%3E%3Cellipse cx='0' cy='0' rx='100' ry='40'/%3E%3Cellipse cx='0' cy='0' rx='100' ry='25'/%3E%3Cellipse cx='0' cy='0' rx='100' ry='12'/%3E%3C!-- longitude --%3E%3Cellipse cx='0' cy='0' rx='85' ry='100'/%3E%3Cellipse cx='0' cy='0' rx='70' ry='100'/%3E%3Cellipse cx='0' cy='0' rx='55' ry='100'/%3E%3Cellipse cx='0' cy='0' rx='40' ry='100'/%3E%3Cellipse cx='0' cy='0' rx='25' ry='100'/%3E%3Cellipse cx='0' cy='0' rx='12' ry='100'/%3E%3C/g%3E%3C/svg%3E");
 }
+
+/* Removes the 10px top margin from the button container */
+#mapButtons {
+    margin-top: 0 !important;
+}
+
+/* Removes the 10px margin from the stats section sitting inside it */
+#mapStatsSection {
+    margin-top: -5px !important; /* Negative margin pulls it up even tighter */
+}
+
+/* Tightens the gap on the individual text lines */
+#mapResult {
+    margin-top: 5px !important;
+}
+#mapCounter {
+    margin-top: 2px !important;
+}
