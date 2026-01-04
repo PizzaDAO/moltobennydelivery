@@ -737,6 +737,10 @@ footer {
   height: 28px;
 }
 
+.github-link:hover {
+  color: blue;
+}
+
 .pizzadao-logo {
   display: block;
   margin: 0 auto 3px;
