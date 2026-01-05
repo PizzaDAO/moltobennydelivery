@@ -725,20 +725,32 @@ footer {
   margin-right: 0;
 }
 
-.github-link {
+/* Bottom-right project links (Sheets + GitHub) */
+.corner-links {
   position: fixed;
   bottom: 16px;
   right: 16px;
   z-index: 9999;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
-.github-link img {
+.corner-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corner-links img {
   width: 28px;
   height: 28px;
+  display: block;
 }
 
-.github-link:hover {
-  color: blue;
+/* Keep existing class name but let the container handle positioning */
+.corner-links .github-link {
+  position: static;
 }
 
 .pizzadao-logo {
